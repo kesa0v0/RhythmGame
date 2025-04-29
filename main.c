@@ -6,6 +6,10 @@
 #define HEIGHT 20
 #define WIDTH  20
 
+#define TIMING_LINE HEIGHT - 4
+#define SCORE_LINE HEIGHT
+#define HIT_LINE HEIGHT - 1
+
 #define NUM_LANES 4
 #define NOTE_CHAR 'A'
 // #define NOTE_CHAR '■'
@@ -19,6 +23,10 @@ typedef struct {
 
 #define MAX_NOTES 100
 Note notes[MAX_NOTES];
+
+
+
+int score = 0;
 
 void spawn_note(int lane) {
     for (int i = 0; i < MAX_NOTES; i++) {
@@ -60,13 +68,15 @@ void handle_input(int ch) {
 
     if (lane != -1) {
         int judged = 0;
+        // TODO: TIMINGLINE에 가장 가까운 순으로 노트 판정 처리하기
         for (int i = 0; i < MAX_NOTES; i++) {
             if (notes[i].active && notes[i].lane == lane) {
-                int diff = notes[i].y - (HEIGHT - 3);
+                int diff = notes[i].y - (TIMING_LINE);
                 if (diff >= -1 && diff <= 1) { // 판정 범위
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
                     notes[i].active = 0;
                     judged = 1;
+                    score += 1;
                     break;
                 }
             }
@@ -74,6 +84,8 @@ void handle_input(int ch) {
         if (!judged) {
             mvprintw(HEIGHT, 0, "Miss...                      ");
         }
+
+        refresh();
     }
 }
 
@@ -100,10 +112,13 @@ int main() {
                 mvaddch(y, i * LANE_WIDTH, '|');
             }
         }
-        mvhline(HEIGHT - 3, 0, '-', WIDTH); // 타이밍선
+        mvhline(TIMING_LINE, 0, '-', WIDTH); // 타이밍선
 
         // 노트 드로우
         draw_notes();
+
+        // 점수 업데이트
+        mvprintw(HEIGHT, 0, "Score: %d", score);
 
         refresh();
 
@@ -121,7 +136,8 @@ int main() {
             spawn_note(rand() % NUM_LANES);
         }
 
-        usleep(80000); // 80ms 프레임
+        usleep(160000); // 160ms 프레임
+        // usleep(80000); // 80ms 프레임
     }
 
     endwin();
