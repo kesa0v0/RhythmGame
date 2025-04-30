@@ -21,21 +21,23 @@ typedef struct {
     int active; // 1이면 존재하는 노트
 } Note;
 
+// Note Queue
 #define MAX_NOTES 100
 Note notes[MAX_NOTES];
-
+int note_start = 0;
+int note_end = 0;
+int note_count = 0;
 
 
 int score = 0;
 
 void spawn_note(int lane) {
-    for (int i = 0; i < MAX_NOTES; i++) {
-        if (!notes[i].active) {
-            notes[i].active = 1;
-            notes[i].lane = lane;
-            notes[i].y = 0;
-            return;
-        }
+    if (note_count < MAX_NOTES) {
+        notes[note_end].lane = lane;
+        notes[note_end].y = 0; // 시작 위치
+        notes[note_end].active = 1;
+        note_end = (note_end + 1) % MAX_NOTES;
+        note_count++;
     }
 }
 
@@ -68,13 +70,14 @@ void handle_input(int ch) {
 
     if (lane != -1) {
         int judged = 0;
-        // TODO: TIMINGLINE에 가장 가까운 순으로 노트 판정 처리하기
-        for (int i = 0; i < MAX_NOTES; i++) {
-            if (notes[i].active && notes[i].lane == lane) {
-                int diff = notes[i].y - (TIMING_LINE);
+        bool isNoteStartBiggerThanEnd = note_start > note_end;
+        int modEnd = isNoteStartBiggerThanEnd? note_end + MAX_NOTES : note_end;
+        for (int i = note_start; i < modEnd; i++) {
+            if (notes[i % MAX_NOTES].active && notes[i % MAX_NOTES].lane == lane) {
+                int diff = notes[i % MAX_NOTES].y - (TIMING_LINE);
                 if (diff >= -1 && diff <= 1) { // 판정 범위
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
-                    notes[i].active = 0;
+                    notes[i % MAX_NOTES].active = 0;
                     judged = 1;
                     score += 1;
                     break;
