@@ -1,7 +1,10 @@
+#include "audio.h"
+
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
+
 
 #define HEIGHT 20
 #define WIDTH  20
@@ -30,6 +33,27 @@ int note_count = 0;
 
 
 int score = 0;
+
+
+#pragma region LeaderBoard
+
+
+typedef struct {
+    char name[20];
+    int score;
+    time_t timestamp;
+} LeaderboardEntry;
+
+
+int read_leaderboard()
+{
+    // use open() and read() to read the leaderboard from a file
+
+}
+
+#pragma endregion
+
+#pragma region UI
 
 void spawn_note(int lane) {
     if (note_count < MAX_NOTES) {
@@ -92,7 +116,17 @@ void handle_input(int ch) {
     }
 }
 
+#pragma endregion
+
 int main() {
+    if (!audio_init()) {
+        fprintf(stderr, "Audio initialization failed\n");
+        return 1;
+    }
+
+    audio_play_bgm("musics/bgm.mp3");
+
+
     initscr();
     noecho();
     curs_set(FALSE);
@@ -104,7 +138,8 @@ int main() {
     init_pair(4, COLOR_YELLOW, COLOR_BLACK);
 
     srand(time(NULL));
-    spawn_note(rand() % NUM_LANES); // 초기 노트 생성
+
+    
     
     while (1) {
         clear();
@@ -131,6 +166,7 @@ int main() {
         int ch = getch();
         if (ch == 'z') break; // z 누르면 종료
         if (ch != ERR) {
+            audio_play_se("sounds/hat.wav");
             handle_input(ch);
         }
 
