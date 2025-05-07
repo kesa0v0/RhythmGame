@@ -5,7 +5,8 @@
 
 bool audio_init();
 void audio_play_bgm(const char *path);
-void audio_play_se(const char *path);
+bool audio_load_se(const char *path);
+void audio_play_se();
 void audio_close();
 
 bool is_music_playing();

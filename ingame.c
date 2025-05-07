@@ -124,7 +124,13 @@ int main() {
         return 1;
     }
 
-    audio_play_bgm("musics/bgm.mp3");
+    // audio_play_bgm("musics/testbgm.wav");
+    if (!audio_load_se("sounds/hat.wav")) 
+    {
+        fprintf(stderr, "SE loading failed\n");
+        audio_close();
+        return 1;
+    }
 
 
     initscr();
@@ -166,7 +172,7 @@ int main() {
         int ch = getch();
         if (ch == 'z') break; // z 누르면 종료
         if (ch != ERR) {
-            audio_play_se("sounds/hat.wav");
+            audio_play_se();
             handle_input(ch);
         }
 
@@ -180,5 +186,6 @@ int main() {
     }
 
     endwin();
+    audio_close();
     return 0;
 }

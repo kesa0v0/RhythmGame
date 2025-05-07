@@ -1,7 +1,7 @@
 # Makefile for Rhythm Game
 
 CC = gcc
-LDFLAGS = -lncurses
+LDFLAGS = -lncurses -lSDL2 -lSDL2_mixer
 
 SRC = ingame.c audio.c
 TARGET = game

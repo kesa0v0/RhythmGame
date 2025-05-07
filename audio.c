@@ -3,13 +3,14 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <SDL2/SDL.h>
-#include <linux/time.h>
+#include <time.h>
 #include <SDL2/SDL_mixer.h>
 
 static int music_started = 0;
 static struct timespec music_start_time;
 
 static Mix_Music *bgm = NULL;
+static Mix_Chunk *se = NULL;
 
 bool audio_init()
 {
@@ -18,7 +19,7 @@ bool audio_init()
         fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
         return false;
     }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 512) < 0)
     {
         fprintf(stderr, "Mix_OpenAudio Error: %s\n", Mix_GetError());
         return false;
@@ -39,20 +40,33 @@ void audio_play_bgm(const char *path)
     Mix_PlayMusic(bgm, -1); // 반복 재생
 }
 
-void audio_play_se(const char *path)
+bool audio_load_se(const char *path)
 {
-    Mix_Chunk *se = Mix_LoadWAV(path);
-    if (!se)
-    {
-        fprintf(stderr, "Mix_LoadWAV Error: %s\n", Mix_GetError());
-        return;
+    if (se) Mix_FreeChunk(se);
+
+    se = Mix_LoadWAV(path);
+    if (!se) {
+        fprintf(stderr, "SE 로딩 실패: %s\n", Mix_GetError());
+        return false;
     }
-    Mix_PlayChannel(-1, se, 0); // 한번 재생
-    Mix_FreeChunk(se);          // 즉시 해제 (메모리 낭비 방지)
+
+    Mix_VolumeChunk(se, MIX_MAX_VOLUME); // 최대 볼륨 설정
+    return true;
+}
+
+void audio_play_se()
+{
+    if (se) {
+        if (Mix_PlayChannel(-1, se, 0) == -1) {
+            fprintf(stderr, "SE 재생 실패: %s\n", Mix_GetError());
+        }
+    }
 }
 
 void audio_close()
 {
+    if (se) 
+        Mix_FreeChunk(se);
     if (bgm)
         Mix_FreeMusic(bgm);
     Mix_CloseAudio();
