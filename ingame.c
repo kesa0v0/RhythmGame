@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
 
 
 #define HEIGHT 20
@@ -118,13 +119,32 @@ void handle_input(int ch) {
 
 #pragma endregion
 
+bool is_game_paused = false;
+
+void close_program()
+{
+    // 프로그램 종료 시 리소스 정리
+    audio_close();
+    endwin();
+
+    exit(0);
+}
+
+void pause_game()
+{
+    is_game_paused = true;
+}
+
 int main() {
+    signal(SIGINT, pause_game);
+    signal(SIGTERM, close_program);
+
     if (!audio_init()) {
         fprintf(stderr, "Audio initialization failed\n");
         return 1;
     }
 
-    // audio_play_bgm("musics/testbgm.wav");
+    audio_play_bgm("musics/testbgm.wav");
     if (!audio_load_se("sounds/hat.wav")) 
     {
         fprintf(stderr, "SE loading failed\n");
@@ -148,6 +168,16 @@ int main() {
     
     
     while (1) {
+        if (is_game_paused) {
+            nodelay(stdscr, FALSE); // 키 입력 대기
+            audio_pause_bgm();
+            mvprintw(HEIGHT, 0, "Game Paused. Press any key to continue...");
+            refresh();
+            getch(); // 키 입력 대기
+            nodelay(stdscr, true); // 키 입력 대기
+            audio_resume_bgm();
+            is_game_paused = false;
+        }
         clear();
 
         // 배경 그리기
@@ -186,6 +216,5 @@ int main() {
     }
 
     endwin();
-    audio_close();
     return 0;
 }

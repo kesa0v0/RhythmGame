@@ -24,6 +24,7 @@ bool audio_init()
         fprintf(stderr, "Mix_OpenAudio Error: %s\n", Mix_GetError());
         return false;
     }
+    Mix_AllocateChannels(32);
 
     return true;
 }
@@ -37,7 +38,7 @@ void audio_play_bgm(const char *path)
         fprintf(stderr, "Mix_LoadMUS Error: %s\n", Mix_GetError());
         return;
     }
-    Mix_PlayMusic(bgm, -1); // 반복 재생
+    Mix_PlayMusic(bgm, 1);
 }
 
 bool audio_load_se(const char *path)
@@ -57,11 +58,29 @@ bool audio_load_se(const char *path)
 void audio_play_se()
 {
     if (se) {
-        if (Mix_PlayChannel(-1, se, 0) == -1) {
+        if (Mix_PlayChannel(2, se, 0) == -1) {
             fprintf(stderr, "SE 재생 실패: %s\n", Mix_GetError());
         }
     }
 }
+
+
+void audio_pause_bgm() {
+    if (Mix_PlayingMusic()) Mix_PauseMusic();
+}
+
+void audio_resume_bgm() {
+    if (Mix_PausedMusic()) Mix_ResumeMusic();
+}
+
+// ms 단위 위치 설정 (seek)
+void audio_seek_bgm(int milliseconds) {
+    double seconds = milliseconds / 1000.0;
+    if (Mix_SetMusicPosition(seconds) == -1) {
+        fprintf(stderr, "Mix_SetMusicPosition Error: %s\n", Mix_GetError());
+    }
+}
+
 
 void audio_close()
 {
@@ -76,18 +95,6 @@ void audio_close()
 bool is_music_playing()
 {
     return Mix_PlayingMusic() != 0;
-}
-
-int get_elapsed_ms()
-{
-    if (music_started)
-    {
-        struct timespec current_time;
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        long elapsed_ns = (current_time.tv_sec - music_start_time.tv_sec) * 1e9 + (current_time.tv_nsec - music_start_time.tv_nsec);
-        return elapsed_ns / 1e6; // 밀리초 단위로 변환
-    }
-    return 0;
 }
 
 void set_volume(int volume)
