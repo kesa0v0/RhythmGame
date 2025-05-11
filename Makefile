@@ -3,7 +3,7 @@
 CC = gcc
 LDFLAGS = -lncurses -lSDL2 -lSDL2_mixer
 
-SRC = ingame.c audio.c
+SRC = ingame.c audio.c rank.c
 TARGET = game
 
 .PHONY: all clean deps run
@@ -15,8 +15,8 @@ $(TARGET): $(SRC)
 
 deps:
 	sudo apt-get update
-	sudo apt-get install -y libncurses-dev;
-	sudo apt install -y libsdl2-mixer-dev;
+	sudo apt-get install -y libncurses-dev
+	sudo apt install -y libsdl2-mixer-dev
 
 run: $(TARGET)
 	./$(TARGET)

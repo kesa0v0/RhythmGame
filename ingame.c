@@ -1,12 +1,12 @@
 #include "audio.h"
-#include "leaderboard.h"
+#include "rank.h"
 
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
 #include <signal.h>
-
+#include <string.h>
 
 #define HEIGHT 20
 #define WIDTH  20
@@ -17,32 +17,31 @@
 
 #define NUM_LANES 4
 #define NOTE_CHAR 'A'
-// #define NOTE_CHAR '■'
 #define LANE_WIDTH (WIDTH / NUM_LANES)
 
 typedef struct {
-    int lane;   // 0 ~ 3
-    int y;      // 현재 y 위치
-    int active; // 1이면 존재하는 노트
+    int lane;
+    int y;
+    int active;
 } Note;
 
-// Note Queue
 #define MAX_NOTES 100
 Note notes[MAX_NOTES];
 int note_start = 0;
 int note_end = 0;
 int note_count = 0;
 
-
 int score = 0;
 
+char username[20];
+LeaderboardEntry ranks[MAX_RANKS];
 
-#pragma region UI
+bool is_game_paused = false;
 
 void spawn_note(int lane) {
     if (note_count < MAX_NOTES) {
         notes[note_end].lane = lane;
-        notes[note_end].y = 0; // 시작 위치
+        notes[note_end].y = 0;
         notes[note_end].active = 1;
         note_end = (note_end + 1) % MAX_NOTES;
         note_count++;
@@ -54,7 +53,7 @@ void update_notes() {
         if (notes[i].active) {
             notes[i].y++;
             if (notes[i].y > HEIGHT) {
-                notes[i].active = 0; // 화면 아래로 넘어가면 제거
+                notes[i].active = 0;
             }
         }
     }
@@ -79,11 +78,11 @@ void handle_input(int ch) {
     if (lane != -1) {
         int judged = 0;
         bool isNoteStartBiggerThanEnd = note_start > note_end;
-        int modEnd = isNoteStartBiggerThanEnd? note_end + MAX_NOTES : note_end;
+        int modEnd = isNoteStartBiggerThanEnd ? note_end + MAX_NOTES : note_end;
         for (int i = note_start; i < modEnd; i++) {
             if (notes[i % MAX_NOTES].active && notes[i % MAX_NOTES].lane == lane) {
-                int diff = notes[i % MAX_NOTES].y - (TIMING_LINE);
-                if (diff >= -1 && diff <= 1) { // 판정 범위
+                int diff = notes[i % MAX_NOTES].y - TIMING_LINE;
+                if (diff >= -1 && diff <= 1) {
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
                     notes[i % MAX_NOTES].active = 0;
                     judged = 1;
@@ -100,42 +99,13 @@ void handle_input(int ch) {
     }
 }
 
-#pragma endregion
-
-bool is_game_paused = false;
-
-void close_program()
-{
-    // 프로그램 종료 시 리소스 정리
+void close_program() {
     audio_close();
     endwin();
-
     exit(0);
 }
 
-void pause_game()
-{
-    is_game_paused = true;
-}
-
-int main() {
-    signal(SIGINT, pause_game);
-    signal(SIGTERM, close_program);
-
-    if (!audio_init()) {
-        fprintf(stderr, "Audio initialization failed\n");
-        return 1;
-    }
-
-    audio_play_bgm("musics/testbgm.wav");
-    if (!audio_load_se("sounds/hat.wav")) 
-    {
-        fprintf(stderr, "SE loading failed\n");
-        audio_close();
-        return 1;
-    }
-
-
+void init_ncurses() {
     initscr();
     noecho();
     curs_set(FALSE);
@@ -145,59 +115,113 @@ int main() {
     init_pair(2, COLOR_GREEN, COLOR_BLACK);
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
     init_pair(4, COLOR_YELLOW, COLOR_BLACK);
+}
 
+void pause_game() {
+    char answer;
+    int count = 0;
+
+    is_game_paused = true;
+    audio_pause_bgm();
+
+    endwin();
+    printf("\n=== GAME PAUSED ===\n");
+
+    count = read_leaderboard(ranks, MAX_RANKS);
+    show_top_ranks(ranks, (count > 3 ? 3 : count));
+
+    while (1) {
+        printf("Continue game? (y/n): ");
+        scanf(" %c", &answer);
+        if (answer == 'y' || answer == 'Y') {
+            break;
+        } else if (answer == 'n' || answer == 'N') {
+            printf("Exiting game without saving data...\n");
+            exit(0);
+        } else {
+            printf("Invalid input. Please enter 'y' or 'n'.\n");
+        }
+    }
+
+    init_ncurses();
+    audio_resume_bgm();
+    is_game_paused = false;
+}
+
+void handle_game_over(const char *username, int score) {
+    int count = read_leaderboard(ranks, MAX_RANKS);
+    insert_rank(ranks, &count, username, score);
+    write_leaderboard(ranks, count);
+
+    endwin();
+    printf("\n===== GAME OVER =====\n");
+    show_top_ranks(ranks, (count > 10 ? 10 : count));
+
+    for (int i = 0; i < count; i++) {
+        if (strcmp(ranks[i].name, username) == 0 && ranks[i].score == score) {
+            printf("Your Rank: #%d\n", i + 1);
+            break;
+        }
+    }
+}
+
+int main() {
+    signal(SIGINT, pause_game);
+    signal(SIGTERM, close_program);
+
+    initscr();
+    echo();
+    mvprintw(0, 0, "Enter your name: ");
+    getnstr(username, sizeof(username));
+    noecho();
+    clear();
+
+    if (!audio_init()) {
+        fprintf(stderr, "Audio initialization failed\n");
+        return 1;
+    }
+
+    audio_play_bgm("musics/testbgm.wav");
+    if (!audio_load_se("sounds/hat.wav")) {
+        fprintf(stderr, "SE loading failed\n");
+        audio_close();
+        return 1;
+    }
+
+    init_ncurses();
     srand(time(NULL));
 
-    
-    
     while (1) {
-        if (is_game_paused) {
-            nodelay(stdscr, FALSE); // 키 입력 대기
-            audio_pause_bgm();
-            mvprintw(HEIGHT, 0, "Game Paused. Press any key to continue...");
-            refresh();
-            getch(); // 키 입력 대기
-            nodelay(stdscr, true); // 키 입력 대기
-            audio_resume_bgm();
-            is_game_paused = false;
-        }
         clear();
 
-        // 배경 그리기
         for (int i = 1; i < NUM_LANES; i++) {
             for (int y = 0; y < HEIGHT; y++) {
                 mvaddch(y, i * LANE_WIDTH, '|');
             }
         }
-        mvhline(TIMING_LINE, 0, '-', WIDTH); // 타이밍선
+        mvhline(TIMING_LINE, 0, '-', WIDTH);
 
-        // 노트 드로우
         draw_notes();
-
-        // 점수 업데이트
         mvprintw(HEIGHT, 0, "Score: %d", score);
-
         refresh();
 
         update_notes();
 
-        // 입력
         int ch = getch();
-        if (ch == 'z') break; // z 누르면 종료
+        if (ch == 'z') break;
         if (ch != ERR) {
             audio_play_se();
             handle_input(ch);
         }
 
-        // 랜덤 노트 생성
-        if (rand() % 10 == 0) { // 약간 랜덤하게 생성
+        if (rand() % 10 == 0) {
             spawn_note(rand() % NUM_LANES);
         }
 
-        usleep(160000); // 160ms 프레임
-        // usleep(80000); // 80ms 프레임
+        usleep(160000);
     }
 
     endwin();
+    handle_game_over(username, score);
     return 0;
 }
