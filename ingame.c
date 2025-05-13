@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "leaderboard.h"
 
 #include <ncurses.h>
 #include <unistd.h>
@@ -35,24 +36,6 @@ int note_count = 0;
 
 int score = 0;
 
-
-#pragma region LeaderBoard
-
-
-typedef struct {
-    char name[20];
-    int score;
-    time_t timestamp;
-} LeaderboardEntry;
-
-
-int read_leaderboard()
-{
-    // use open() and read() to read the leaderboard from a file
-
-}
-
-#pragma endregion
 
 #pragma region UI
 

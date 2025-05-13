@@ -1,4 +1,4 @@
-#ifndef AUDIO_H
+#pragma once
 #define AUDIO_H
 
 #include <stdbool.h>
@@ -14,5 +14,3 @@ void audio_close();
 
 bool is_music_playing();
 void set_volume(int volume);
-
-#endif
