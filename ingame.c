@@ -49,10 +49,12 @@ typedef struct NoteNode {
     struct NoteNode* next;
 } NoteNode;
 NoteNode* beatmap = NULL;
+char song_name[256];
+char song_path[1024];
 int song_length = 0;
 int bpm = 0;
 
-void read_beatmap(const char* filename, void* beatmap) {
+void read_beatmap(const char* filename) {
     // read() 시스템콜로 beatmap 파일을 읽고 Note 구조체의 연결리스트로 저장
     char buffer[1024];
 
@@ -195,6 +197,9 @@ void handle_game_over(const char *username, int score) {
     }
 }
 
+
+int time_passed = 0;
+
 int main() {
     signal(SIGINT, pause_game);
     signal(SIGTERM, close_program);
@@ -206,12 +211,15 @@ int main() {
     noecho();
     clear();
 
+    read_beatmap("beatmaps/testbeatmap.txt");
+
+
     if (!audio_init()) {
         fprintf(stderr, "Audio initialization failed\n");
         return 1;
     }
 
-    audio_play_bgm("musics/testbgm.wav");
+    audio_play_bgm("musics/testbgm.wav"); // TODO: song_path로 바꾸기 (read_beatmap 만든 뒤)
     if (!audio_load_se("sounds/hat.wav")) {
         fprintf(stderr, "SE loading failed\n");
         audio_close();
@@ -248,7 +256,7 @@ int main() {
             spawn_note(rand() % NUM_LANES);
         }
 
-        usleep(160000);
+        usleep(160000); 
     }
 
     endwin();
