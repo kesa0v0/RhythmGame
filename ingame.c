@@ -44,11 +44,12 @@ int note_end = 0;
 int note_count = 0;
 
 // Note 구조체 연결리스트
-typedef struct NoteNode {
-    Note note;
-    struct NoteNode* next;
-} NoteNode;
-NoteNode* beatmap = NULL;
+typedef struct BeatMapNote {
+    int hit_ms;
+    int lane;
+    struct BeatMapNote* next;
+} BeatMapNote;
+BeatMapNote* beatmap = NULL;
 char song_name[256];
 char song_path[1024];
 int song_length = 0;
