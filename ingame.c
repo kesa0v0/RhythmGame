@@ -11,9 +11,9 @@
 #define HEIGHT 20
 #define WIDTH  20
 
-#define TIMING_LINE HEIGHT - 4
-#define SCORE_LINE HEIGHT
-#define HIT_LINE HEIGHT - 1
+#define TIMING_LINE ((HEIGHT) - 4)
+#define SCORE_LINE (HEIGHT)
+#define HIT_LINE ((HEIGHT) - 1)
 
 #define NUM_LANES 4
 #define NOTE_CHAR 'A'
@@ -82,6 +82,7 @@ void handle_input(int ch) {
         for (int i = note_start; i < modEnd; i++) {
             if (notes[i % MAX_NOTES].active && notes[i % MAX_NOTES].lane == lane) {
                 int diff = notes[i % MAX_NOTES].y - TIMING_LINE;
+                printf("note: %d, diff: %d\n", notes[i % MAX_NOTES].y, diff);
                 if (diff >= -1 && diff <= 1) {
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
                     notes[i % MAX_NOTES].active = 0;
