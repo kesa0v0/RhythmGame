@@ -16,8 +16,20 @@
 #define HIT_LINE ((HEIGHT) - 1)
 
 #define NUM_LANES 4
-#define NOTE_CHAR 'A'
 #define LANE_WIDTH (WIDTH / NUM_LANES)
+
+
+int score = 0;
+
+char username[20];
+LeaderboardEntry ranks[MAX_RANKS];
+
+bool is_game_paused = false;
+
+
+#pragma region Note
+
+#define NOTE_CHAR 'A'
 
 typedef struct {
     int lane;
@@ -31,12 +43,26 @@ int note_start = 0;
 int note_end = 0;
 int note_count = 0;
 
-int score = 0;
+// Note 구조체 연결리스트
+typedef struct NoteNode {
+    Note note;
+    struct NoteNode* next;
+} NoteNode;
+NoteNode* beatmap = NULL;
+int song_length = 0;
+int bpm = 0;
 
-char username[20];
-LeaderboardEntry ranks[MAX_RANKS];
+void read_beatmap(const char* filename, void* beatmap) {
+    // read() 시스템콜로 beatmap 파일을 읽고 Note 구조체의 연결리스트로 저장
+    char buffer[1024];
 
-bool is_game_paused = false;
+    int fd = open(filename, O_RDONLY);
+
+
+    //TODO: 읽고 연결리스트로 변환하는 코드 작성
+
+    return 0;
+}
 
 void spawn_note(int lane) {
     if (note_count < MAX_NOTES) {
@@ -67,6 +93,9 @@ void draw_notes() {
         }
     }
 }
+
+#pragma endregion
+
 
 void handle_input(int ch) {
     int lane = -1;
