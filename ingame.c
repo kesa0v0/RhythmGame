@@ -7,6 +7,7 @@
 #include <time.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
 
 #define HEIGHT 20
 #define WIDTH  20
@@ -56,15 +57,49 @@ int song_length = 0;
 int bpm = 0;
 
 void read_beatmap(const char* filename) {
-    // read() 시스템콜로 beatmap 파일을 읽고 Note 구조체의 연결리스트로 저장
+    // 선택된 파일의 데이터를 읽어서 연결리스트로로 구현.
     char buffer[1024];
+    ssize_t bytes_read;
 
     int fd = open(filename, O_RDONLY);
+    if (fd < 0) {
+        perror("파일 열기 실패\n");
+        exit(1);
+    }
 
+    song_length = 0;
 
-    //TODO: 읽고 연결리스트로 변환하는 코드 작성
+    while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[bytes_read] = '\0';  // 문자열 종료 처리
 
-    return 0;
+        char* line = strtok(buffer, "\n");
+        while (line != NULL) {
+            int hit_ms, lane;
+            if (sscanf(line, "%d %d", &hit_ms, &lane) == 2) {
+                BeatMapNote* new_note = (BeatMapNote*)malloc(sizeof(BeatMapNote));
+                new_note->hit_ms = hit_ms;
+                new_note->lane = lane;
+                new_note->next = NULL;
+
+                if (beatmap == NULL) {
+                    beatmap = new_note;
+                } else {
+                    BeatMapNote* current = beatmap;
+                    while (current->next != NULL) {
+                        current = current->next;
+                    }
+                    current->next = new_note;
+                }
+
+                song_length++;
+            }
+
+            line = strtok(NULL, "\n");
+        }
+    }
+
+    close(fd);    
+
 }
 
 void spawn_note(int lane) {
