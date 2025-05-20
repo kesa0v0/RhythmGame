@@ -26,6 +26,7 @@ char username[20];
 LeaderboardEntry ranks[MAX_RANKS];
 
 bool is_game_paused = false;
+int time_passed = 0;
 
 
 #pragma region Note
@@ -56,6 +57,7 @@ char song_path[1024];
 int song_length = 0;
 int bpm = 0;
 
+
 void read_beatmap(const char* filename) {
     // 선택된 파일의 데이터를 읽어서 연결리스트로로 구현.
     char buffer[1024];
@@ -73,8 +75,16 @@ void read_beatmap(const char* filename) {
         buffer[bytes_read] = '\0';  // 문자열 종료 처리
 
         char* line = strtok(buffer, "\n");
+        int hit_ms, lane;
         while (line != NULL) {
-            int hit_ms, lane;
+            if (line[0] == '@') {
+                sscanf(line, "@%s %d %s", song_name, song_length, song_path) == 3;
+            }
+            else if (line[0] == '#') {
+                sscanf(line, "#%d", &bpm) == 1;
+            }
+
+            // 비트
             if (sscanf(line, "%d %d", &hit_ms, &lane) == 2) {
                 BeatMapNote* new_note = (BeatMapNote*)malloc(sizeof(BeatMapNote));
                 new_note->hit_ms = hit_ms;
@@ -233,8 +243,6 @@ void handle_game_over(const char *username, int score) {
     }
 }
 
-
-int time_passed = 0;
 
 int main() {
     signal(SIGINT, pause_game);
