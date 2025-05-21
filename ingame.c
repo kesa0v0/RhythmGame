@@ -16,7 +16,7 @@
 #define SCORE_LINE (HEIGHT)
 #define HIT_LINE ((HEIGHT) - 1)
 
-#define MS_PER_FRAME 16
+#define MS_PER_FRAME 160
 #define NUM_LANES 4
 #define LANE_WIDTH (WIDTH / NUM_LANES)
 
@@ -120,9 +120,9 @@ void spawn_note(BeatMapNote* beatmap, int lane) {
         exit(1);
     }
     new_note->lane = lane;
-    new_note->y = 0;
-    new_note->active = 1;
     new_note->hit_ms = beatmap->hit_ms;
+    new_note->y = TIMING_LINE - (new_note->hit_ms / bpm);
+    new_note->active = 1;
     new_note->next = NULL;
 
     if (notes == NULL) {
@@ -137,10 +137,9 @@ void spawn_note(BeatMapNote* beatmap, int lane) {
 
 void update_notes() {
     Note* current = notes;
-    int note_speed = MS_PER_FRAME / (bpm / 10);
     while (current != NULL) {
         if (current->active) {
-            current->y += note_speed;
+            current->y = TIMING_LINE + (time_passed - current->hit_ms) / bpm;
             if (current->y >= HEIGHT) {
                 current->active = 0;
                 note_count--;
@@ -357,7 +356,7 @@ int main() {
             break;
         }
 
-        time_passed += 16; // 60 FPS
+        time_passed += 160; // 60 FPS
         usleep(160000); // 60 FPS 고정
     }
 
