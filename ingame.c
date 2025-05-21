@@ -16,6 +16,7 @@
 #define SCORE_LINE (HEIGHT)
 #define HIT_LINE ((HEIGHT) - 1)
 
+#define MS_PER_FRAME 16
 #define NUM_LANES 4
 #define LANE_WIDTH (WIDTH / NUM_LANES)
 
@@ -33,19 +34,19 @@ int time_passed = 0;
 
 #define NOTE_CHAR 'A'
 
-typedef struct {
+typedef struct Note {
     int lane;
     int y;
+    int hit_ms;
     int active;
-} Note;
 
-#define MAX_NOTES 100
-Note notes[MAX_NOTES];
-int note_start = 0;
-int note_end = 0;
+    struct Note* next;
+} Note;
+Note* notes = NULL;
+Note* notes_back = NULL;
 int note_count = 0;
 
-// Note 구조체 연결리스트
+// BeatMapNote 구조체 연결리스트
 typedef struct BeatMapNote {
     int hit_ms;
     int lane;
@@ -113,32 +114,73 @@ void read_beatmap(const char* filename) {
 }
 
 void spawn_note(int lane) {
-    if (note_count < MAX_NOTES) {
-        notes[note_end].lane = lane;
-        notes[note_end].y = 0;
-        notes[note_end].active = 1;
-        note_end = (note_end + 1) % MAX_NOTES;
-        note_count++;
+    Note* new_note = (Note*)malloc(sizeof(Note));
+    if (new_note == NULL) {
+        fprintf(stderr, "Error: Memory allocation failed\n");
+        exit(1);
     }
+    new_note->lane = lane;
+    new_note->y = 0;
+    new_note->active = 1;
+    new_note->next = NULL;
+
+    if (notes == NULL) {
+        notes = new_note;
+        notes_back = new_note;
+    } else {
+        notes_back->next = new_note;
+        notes_back = new_note;
+    }
+    notes_back->next = NULL;
+    note_count++;
 }
 
 void update_notes() {
-    for (int i = 0; i < MAX_NOTES; i++) {
-        if (notes[i].active) {
-            notes[i].y++;
-            if (notes[i].y > HEIGHT) {
-                notes[i].active = 0;
+    Note* current = notes;
+    int note_speed = MS_PER_FRAME / (bpm / 10);
+    while (current != NULL) {
+        if (current->active) {
+            current->y += note_speed;
+            if (current->y >= HEIGHT) {
+                current->active = 0;
+                note_count--;
             }
         }
+        current = current->next;
+    }
+
+    // release inactive notes
+    Note* prev = NULL;
+    current = notes;
+    while (current != NULL) {
+        if (!current->active) {
+            if (prev == NULL) {
+                notes = current->next;
+                free(current);
+                current = notes;
+            } else {
+                prev->next = current->next;
+                free(current);
+                current = prev->next;
+            }
+        } else {
+            prev = current;
+            current = current->next;
+        }
+    }
+    if (notes == NULL) {
+        notes_back = NULL;
     }
 }
 
 void draw_notes() {
-    for (int i = 0; i < MAX_NOTES; i++) {
-        if (notes[i].active) {
-            int x = notes[i].lane * LANE_WIDTH + LANE_WIDTH / 2;
-            mvaddch(notes[i].y, x, NOTE_CHAR);
+    Note* current = notes;
+    while (current != NULL) {
+        if (current->active) {
+            int x = current->lane * LANE_WIDTH + LANE_WIDTH / 2;
+            mvaddch(current->y, x, NOTE_CHAR);
         }
+        current = current->next;
     }
 }
 
@@ -154,25 +196,23 @@ void handle_input(int ch) {
 
     if (lane != -1) {
         int judged = 0;
-        bool isNoteStartBiggerThanEnd = note_start > note_end;
-        int modEnd = isNoteStartBiggerThanEnd ? note_end + MAX_NOTES : note_end;
-        for (int i = note_start; i < modEnd; i++) {
-            if (notes[i % MAX_NOTES].active && notes[i % MAX_NOTES].lane == lane) {
-                int diff = notes[i % MAX_NOTES].y - TIMING_LINE;
-                printf("note: %d, diff: %d\n", notes[i % MAX_NOTES].y, diff);
+        Note* current = notes;
+        while (current != NULL) {
+            if (current->active && current->lane == lane) {
+                int diff = current->y - TIMING_LINE;
                 if (diff >= -1 && diff <= 1) {
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
-                    notes[i % MAX_NOTES].active = 0;
+                    current->active = 0;
                     judged = 1;
                     score += 1;
                     break;
                 }
             }
+            current = current->next;
         }
         if (!judged) {
             mvprintw(HEIGHT, 0, "Miss...                      ");
         }
-
         refresh();
     }
 }
@@ -300,7 +340,8 @@ int main() {
             spawn_note(rand() % NUM_LANES);
         }
 
-        usleep(160000); 
+        time_passed += 16; // 60 FPS
+        usleep(160000); // 60 FPS 고정
     }
 
     endwin();
