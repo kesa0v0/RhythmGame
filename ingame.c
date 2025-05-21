@@ -113,7 +113,7 @@ void read_beatmap(const char* filename) {
 
 }
 
-void spawn_note(int lane) {
+void spawn_note(BeatMapNote* beatmap, int lane) {
     Note* new_note = (Note*)malloc(sizeof(Note));
     if (new_note == NULL) {
         fprintf(stderr, "Error: Memory allocation failed\n");
@@ -122,6 +122,7 @@ void spawn_note(int lane) {
     new_note->lane = lane;
     new_note->y = 0;
     new_note->active = 1;
+    new_note->hit_ms = beatmap->hit_ms;
     new_note->next = NULL;
 
     if (notes == NULL) {
@@ -131,7 +132,6 @@ void spawn_note(int lane) {
         notes_back->next = new_note;
         notes_back = new_note;
     }
-    notes_back->next = NULL;
     note_count++;
 }
 
@@ -336,8 +336,25 @@ int main() {
             handle_input(ch);
         }
 
-        if (rand() % 10 == 0) {
-            spawn_note(rand() % NUM_LANES);
+        // Spawn notes based on the beatmap
+        BeatMapNote* current = beatmap;
+        while (current != NULL) {
+            if (time_passed >= current->hit_ms - HEIGHT * MS_PER_FRAME) {
+                spawn_note(current, current->lane);
+                BeatMapNote* temp = current;
+                current = current->next;
+                free(temp);
+            } else {
+                current = current->next;
+            }
+        }
+        beatmap = current;
+
+        // Check for game over condition
+        
+        // BeatMapNote left is 0 and notes left is 0
+        if (beatmap == NULL && notes == NULL) {
+            break;
         }
 
         time_passed += 16; // 60 FPS
