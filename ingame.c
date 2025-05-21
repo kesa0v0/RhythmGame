@@ -79,7 +79,7 @@ void read_beatmap(const char* filename) {
         int hit_ms, lane;
         while (line != NULL) {
             if (line[0] == '@') {
-                sscanf(line, "@%s %d %s", song_name, song_length, song_path) == 3;
+                sscanf(line, "@%s %d %s", song_name, &song_length, song_path) == 3;
             }
             else if (line[0] == '#') {
                 sscanf(line, "#%d", &bpm) == 1;
