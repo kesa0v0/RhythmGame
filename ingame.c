@@ -121,7 +121,7 @@ void spawn_note(BeatMapNote* beatmap, int lane) {
     }
     new_note->lane = lane;
     new_note->hit_ms = beatmap->hit_ms;
-    new_note->y = TIMING_LINE - (new_note->hit_ms / bpm);
+    new_note->y = TIMING_LINE - (new_note->hit_ms - time_passed / bpm);
     new_note->active = 1;
     new_note->next = NULL;
 
@@ -139,7 +139,7 @@ void update_notes() {
     Note* current = notes;
     while (current != NULL) {
         if (current->active) {
-            current->y = TIMING_LINE + (time_passed - current->hit_ms) / bpm;
+            current->y = TIMING_LINE - (current->hit_ms - time_passed) / bpm;
             if (current->y >= HEIGHT) {
                 current->active = 0;
                 note_count--;
