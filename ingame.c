@@ -244,8 +244,7 @@ void pause_game() {
     endwin();
     printf("\n=== GAME PAUSED ===\n");
 
-    count = read_leaderboard(ranks, MAX_RANKS);
-    show_top_ranks(ranks, (count > 3 ? 3 : count));
+    show_top_ranks(ranks, 3);
 
     while (1) {
         printf("Continue game? (y/n): ");
@@ -272,7 +271,7 @@ void handle_game_over(const char *username, int score) {
 
     endwin();
     printf("\n===== GAME OVER =====\n");
-    show_top_ranks(ranks, (count > 10 ? 10 : count));
+    show_top_ranks(ranks, 10);
 
     for (int i = 0; i < count; i++) {
         if (strcmp(ranks[i].name, username) == 0 && ranks[i].score == score) {

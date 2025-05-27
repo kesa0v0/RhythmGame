@@ -9,3 +9,4 @@ bool request_top10(const char *title);
 void disconnect();
 
 #endif // NETWORK_H
+

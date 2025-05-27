@@ -9,10 +9,11 @@
 #define MAX_ENTRIES 1024
 
 typedef struct {
-    char nickname[64];
-    char title[64];
+    char nickname[20];
+    char title[256];
     int score;
 } Entry;
+
 
 void sort_scores(const char *filename) {
     Entry entries[MAX_ENTRIES];
