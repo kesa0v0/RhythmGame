@@ -244,6 +244,7 @@ void pause_game() {
     endwin();
     printf("\n=== GAME PAUSED ===\n");
 
+    
     show_top_ranks(ranks, 3);
 
     while (1) {
@@ -264,21 +265,14 @@ void pause_game() {
     is_game_paused = false;
 }
 
-void handle_game_over(const char *username, int score) {
-    int count = read_leaderboard(ranks, MAX_RANKS);
-    insert_rank(ranks, &count, username, score);
-    write_leaderboard(ranks, count);
+void handle_game_over(char *username, int score) {
+    insert_rank(username, song_name, score);
 
     endwin();
     printf("\n===== GAME OVER =====\n");
     show_top_ranks(ranks, 10);
 
-    for (int i = 0; i < count; i++) {
-        if (strcmp(ranks[i].name, username) == 0 && ranks[i].score == score) {
-            printf("Your Rank: #%d\n", i + 1);
-            break;
-        }
-    }
+    // YOUR RANK IS
 }
 
 
@@ -294,6 +288,7 @@ int main() {
     clear();
 
     read_beatmap("beatmaps/testbeatmap.txt");
+    read_leaderboard(ranks, song_name ,10);
 
 
     if (!audio_init()) {

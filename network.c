@@ -25,7 +25,9 @@ bool send_score(const char *nickname, const char *title, int score) {
     return send(sock, buffer, strlen(buffer), 0) > 0;
 }
 
-bool request_top10(const char *title) {
+bool request_top10(const char *title, LeaderboardEntry *entries) {
+    if (sock < 0) return false;
+
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "TOP10 %s\n", title);
     send(sock, buffer, strlen(buffer), 0);
@@ -34,7 +36,19 @@ bool request_top10(const char *title) {
     int bytes = recv(sock, recv_buf, sizeof(recv_buf) - 1, 0);
     if (bytes > 0) {
         recv_buf[bytes] = '\0';
-        printf("Top 10 Scores for %s:\n%s\n", title, recv_buf);
+        char *line = strtok(recv_buf, "\n");
+        int count = 0;
+        while (line != NULL && count < 10) {
+            sscanf(line, "%s %s %d", entries[count].nickname, entries[count].title, &entries[count].score);
+            count++;
+            line = strtok(NULL, "\n");
+        }
+        // Fill remaining entries with empty values if less than 10
+        for (; count < 10; count++) {
+            strcpy(entries[count].nickname, "");
+            strcpy(entries[count].title, "");
+            entries[count].score = 0;
+        }
         return true;
     }
     return false;

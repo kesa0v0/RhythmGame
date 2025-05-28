@@ -1,19 +1,13 @@
 #ifndef RANK_H
 #define RANK_H
 
+#include "network.h"
 #include <time.h>
 
 #define MAX_RANKS 10
-#define RANK_FILE "rank.txt"
 
-typedef struct {
-    char nickname[20];
-    char title[256];
-    int score;
-} LeaderboardEntry;
-
-int read_leaderboard(LeaderboardEntry *entries, int max_entries);
-void insert_rank(LeaderboardEntry *entries, int *count, const char *name, int score);
+int read_leaderboard(LeaderboardEntry *entries, char *title, int max_entries);
+void insert_rank(char *nickname, char *title, int score);
 void show_top_ranks(LeaderboardEntry *entries, int count);
 
 #endif // RANK_H
