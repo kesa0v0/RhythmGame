@@ -106,11 +106,11 @@ void *client_handler(void *arg)
             {
                 fprintf(fp, "%s %s %d\n", nickname, title, score);
                 fclose(fp);
-                printf("[client_handler] 점수 저장: %s %s %d -> %s\n", nickname, title, score, filename);
+                printf("[client_handler/SCORE] 점수 저장: %s %s %d -> %s\n", nickname, title, score, filename);
             }
             else
             {
-                printf("[client_handler] 점수 파일 열기 실패: %s\n", filename);
+                printf("[client_handler/SCORE] 점수 파일 열기 실패: %s\n", filename);
             }
             sort_scores(filename);
         }
@@ -133,12 +133,12 @@ void *client_handler(void *arg)
                 }
                 send(client_sock, result, strlen(result), 0);
                 fclose(fp);
-                printf("[client_handler] TOP10 전송: %s (%d개)\n", filename, count);
+                printf("[client_handler/TOP10] TOP10 전송: %s (%d개)\n", filename, count);
             }
             else
             {
                 send(client_sock, "No scores found.\n", 17, 0);
-                printf("[client_handler] TOP10 요청 파일 없음: %s\n", filename);
+                printf("[client_handler/TOP10] TOP10 요청 파일 없음: %s\n", filename);
             }
         }
     }

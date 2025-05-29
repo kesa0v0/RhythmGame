@@ -36,6 +36,16 @@ bool request_top10(const char *title, LeaderboardEntry *entries) {
     int bytes = recv(sock, recv_buf, sizeof(recv_buf) - 1, 0);
     if (bytes > 0) {
         recv_buf[bytes] = '\0';
+
+        if (strncmp(recv_buf, "No scores found.", 16) == 0) {
+            for (int i = 0; i < 10; i++) {
+                strcpy(entries[i].nickname, "");
+                strcpy(entries[i].title, "");
+                entries[i].score = 0;
+            }
+            return false; // No scores found
+        }
+
         char *line = strtok(recv_buf, "\n");
         int count = 0;
         while (line != NULL && count < 10) {

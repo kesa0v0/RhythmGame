@@ -319,6 +319,7 @@ void pause_game()
     endwin();
     printf("\n=== GAME PAUSED ===\n");
 
+    read_leaderboard(ranks, song_name, 3);
     show_top_ranks(ranks, 3);
 
     while (1)
@@ -351,9 +352,13 @@ void handle_game_over(char *username, int score)
 
     endwin();
     printf("\n===== GAME OVER =====\n");
+    
+    read_leaderboard(ranks, song_name ,10);
     show_top_ranks(ranks, 10);
 
     // YOUR RANK IS
+
+    
 }
 
 int main()
@@ -371,10 +376,6 @@ int main()
     mvprintw(0, 0, "Loading beatmap and audio...");
     refresh();
     read_beatmap("beatmaps/testbeatmap.txt");
-    mvprintw(1, 0, "Beatmap loaded: %s", song_name);
-    mvprintw(2, 0, "Connecting to server...");
-    refresh();
-    read_leaderboard(ranks, song_name ,10);
 
     if (!audio_init())
     {
