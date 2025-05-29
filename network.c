@@ -22,7 +22,18 @@ bool connect_to_server(const char *ip, int port) {
 bool send_score(const char *nickname, const char *title, int score) {
     char buffer[256];
     snprintf(buffer, sizeof(buffer), "SCORE %s %s %d\n", nickname, title, score);
-    return send(sock, buffer, strlen(buffer), 0) > 0;
+    if (send(sock, buffer, strlen(buffer), 0) <= 0)
+        return false;
+
+    // OK 응답 대기
+    char resp[16];
+    int bytes = recv(sock, resp, sizeof(resp) - 1, 0);
+    if (bytes > 0) {
+        resp[bytes] = '\0';
+        if (strncmp(resp, "OK", 2) == 0)
+            return true;
+    }
+    return false;
 }
 
 bool request_top10(const char *title, LeaderboardEntry *entries) {

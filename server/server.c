@@ -113,6 +113,7 @@ void *client_handler(void *arg)
                 printf("[client_handler/SCORE] 점수 파일 열기 실패: %s\n", filename);
             }
             sort_scores(filename);
+            send(client_sock, "OK\n", 14, 0);
         }
         else if (strncmp(buffer, "TOP10", 5) == 0)
         {
