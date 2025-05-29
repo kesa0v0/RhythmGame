@@ -10,7 +10,7 @@
 #include <fcntl.h>
 
 #define HEIGHT 20
-#define WIDTH  20
+#define WIDTH 20
 
 #define TIMING_LINE ((HEIGHT) - 4)
 #define SCORE_LINE (HEIGHT)
@@ -20,7 +20,6 @@
 #define NUM_LANES 4
 #define LANE_WIDTH (WIDTH / NUM_LANES)
 
-
 int score = 0;
 
 char username[20];
@@ -29,93 +28,139 @@ LeaderboardEntry ranks[MAX_RANKS];
 bool is_game_paused = false;
 int time_passed = 0;
 
-
 #pragma region Note
 
 #define NOTE_CHAR 'A'
 
-typedef struct Note {
+typedef struct Note
+{
     int lane;
     int y;
     int hit_ms;
     int active;
 
-    struct Note* next;
+    struct Note *next;
 } Note;
-Note* notes = NULL;
-Note* notes_back = NULL;
+Note *notes = NULL;
+Note *notes_back = NULL;
 int note_count = 0;
 
 // BeatMapNote 구조체 연결리스트
-typedef struct BeatMapNote {
+typedef struct BeatMapNote
+{
     int hit_ms;
     int lane;
-    struct BeatMapNote* next;
+    struct BeatMapNote *next;
 } BeatMapNote;
-BeatMapNote* beatmap = NULL;
+BeatMapNote *beatmap = NULL;
 char song_name[256];
-char song_path[1024];
+char song_path[512];
 int song_length = 0;
 int bpm = 0;
 
-
-void read_beatmap(const char* filename) {
-    // 선택된 파일의 데이터를 읽어서 연결리스트로로 구현.
-    char buffer[1024];
-    ssize_t bytes_read;
-
+void read_beatmap(const char *filename)
+{
     int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         perror("파일 열기 실패\n");
         exit(1);
     }
 
-    song_length = 0;
+    char buf[1024];
+    char line[256];
+    int buf_len = 0, line_len = 0;
+    ssize_t bytes_read;
+    beatmap = NULL;
+    BeatMapNote *tail = NULL;
 
-    while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
-        buffer[bytes_read] = '\0';  // 문자열 종료 처리
-
-        char* line = strtok(buffer, "\n");
-        int hit_ms, lane;
-        while (line != NULL) {
-            if (line[0] == '@') {
-                sscanf(line, "@%s %d %s", song_name, &song_length, song_path) == 3;
-            }
-            else if (line[0] == '#') {
-                sscanf(line, "#%d", &bpm) == 1;
-            }
-
-            // 비트
-            if (sscanf(line, "%d %d", &hit_ms, &lane) == 2) {
-                BeatMapNote* new_note = (BeatMapNote*)malloc(sizeof(BeatMapNote));
-                new_note->hit_ms = hit_ms;
-                new_note->lane = lane;
-                new_note->next = NULL;
-
-                if (beatmap == NULL) {
-                    beatmap = new_note;
-                } else {
-                    BeatMapNote* current = beatmap;
-                    while (current->next != NULL) {
-                        current = current->next;
-                    }
-                    current->next = new_note;
+    while ((bytes_read = read(fd, buf + buf_len, sizeof(buf) - buf_len - 1)) > 0)
+    {
+        buf_len += bytes_read;
+        buf[buf_len] = '\0';
+        int i = 0;
+        while (i < buf_len)
+        {
+            if (buf[i] == '\n' || buf[i] == '\r')
+            {
+                line[line_len] = '\0';
+                // 파싱
+                int hit_ms, lane;
+                if (line[0] == '@')
+                {
+                    sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
                 }
-
-                song_length++;
+                else if (line[0] == '#')
+                {
+                    sscanf(line, "#%d", &bpm);
+                }
+                else if (sscanf(line, "%d %d", &hit_ms, &lane) == 2)
+                {
+                    BeatMapNote *new_note = malloc(sizeof(BeatMapNote));
+                    new_note->hit_ms = hit_ms;
+                    new_note->lane = lane;
+                    new_note->next = NULL;
+                    if (!beatmap)
+                        beatmap = new_note;
+                    else
+                        tail->next = new_note;
+                    tail = new_note;
+                }
+                line_len = 0;
+                i++;
             }
-
-            line = strtok(NULL, "\n");
+            else
+            {
+                if (line_len < sizeof(line) - 1)
+                    line[line_len++] = buf[i];
+                i++;
+            }
+        }
+        // 남은 데이터(줄바꿈 없는 마지막 줄)는 line에 남겨둠
+        if (line_len > 0)
+        {
+            memmove(buf, buf + buf_len - line_len, line_len);
+            buf_len = line_len;
+        }
+        else
+        {
+            buf_len = 0;
         }
     }
-
-    close(fd);    
-
+    // 마지막 줄 처리
+    if (line_len > 0)
+    {
+        line[line_len] = '\0';
+        int hit_ms, lane;
+        if (line[0] == '@')
+        {
+            sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
+        }
+        else if (line[0] == '#')
+        {
+            sscanf(line, "#%d", &bpm);
+        }
+        else if (sscanf(line, "%d %d", &hit_ms, &lane) == 2)
+        {
+            BeatMapNote *new_note = malloc(sizeof(BeatMapNote));
+            new_note->hit_ms = hit_ms;
+            new_note->lane = lane;
+            new_note->next = NULL;
+            if (!beatmap)
+                beatmap = new_note;
+            else
+                tail->next = new_note;
+            tail = new_note;
+        }
+    }
+    close(fd);
 }
 
-void spawn_note(BeatMapNote* beatmap, int lane) {
-    Note* new_note = (Note*)malloc(sizeof(Note));
-    if (new_note == NULL) {
+void spawn_note(BeatMapNote *beatmap, int lane)
+{
+    Note *new_note = (Note *)malloc(sizeof(Note));
+    if (new_note == NULL)
+    {
         fprintf(stderr, "Error: Memory allocation failed\n");
         exit(1);
     }
@@ -125,22 +170,29 @@ void spawn_note(BeatMapNote* beatmap, int lane) {
     new_note->active = 1;
     new_note->next = NULL;
 
-    if (notes == NULL) {
+    if (notes == NULL)
+    {
         notes = new_note;
         notes_back = new_note;
-    } else {
+    }
+    else
+    {
         notes_back->next = new_note;
         notes_back = new_note;
     }
     note_count++;
 }
 
-void update_notes() {
-    Note* current = notes;
-    while (current != NULL) {
-        if (current->active) {
+void update_notes()
+{
+    Note *current = notes;
+    while (current != NULL)
+    {
+        if (current->active)
+        {
             current->y = TIMING_LINE - (current->hit_ms - time_passed) / bpm;
-            if (current->y >= HEIGHT) {
+            if (current->y >= HEIGHT)
+            {
                 current->active = 0;
                 note_count--;
             }
@@ -149,33 +201,44 @@ void update_notes() {
     }
 
     // release inactive notes
-    Note* prev = NULL;
+    Note *prev = NULL;
     current = notes;
-    while (current != NULL) {
-        if (!current->active) {
-            if (prev == NULL) {
+    while (current != NULL)
+    {
+        if (!current->active)
+        {
+            if (prev == NULL)
+            {
                 notes = current->next;
                 free(current);
                 current = notes;
-            } else {
+            }
+            else
+            {
                 prev->next = current->next;
                 free(current);
                 current = prev->next;
             }
-        } else {
+        }
+        else
+        {
             prev = current;
             current = current->next;
         }
     }
-    if (notes == NULL) {
+    if (notes == NULL)
+    {
         notes_back = NULL;
     }
 }
 
-void draw_notes() {
-    Note* current = notes;
-    while (current != NULL) {
-        if (current->active) {
+void draw_notes()
+{
+    Note *current = notes;
+    while (current != NULL)
+    {
+        if (current->active)
+        {
             int x = current->lane * LANE_WIDTH + LANE_WIDTH / 2;
             mvaddch(current->y, x, NOTE_CHAR);
         }
@@ -185,21 +248,29 @@ void draw_notes() {
 
 #pragma endregion
 
-
-void handle_input(int ch) {
+void handle_input(int ch)
+{
     int lane = -1;
-    if (ch == 'q') lane = 0;
-    else if (ch == 'w') lane = 1;
-    else if (ch == 'e') lane = 2;
-    else if (ch == 'r') lane = 3;
+    if (ch == 'q')
+        lane = 0;
+    else if (ch == 'w')
+        lane = 1;
+    else if (ch == 'e')
+        lane = 2;
+    else if (ch == 'r')
+        lane = 3;
 
-    if (lane != -1) {
+    if (lane != -1)
+    {
         int judged = 0;
-        Note* current = notes;
-        while (current != NULL) {
-            if (current->active && current->lane == lane) {
+        Note *current = notes;
+        while (current != NULL)
+        {
+            if (current->active && current->lane == lane)
+            {
                 int diff = current->y - TIMING_LINE;
-                if (diff >= -1 && diff <= 1) {
+                if (diff >= -1 && diff <= 1)
+                {
                     mvprintw(HEIGHT, 0, "Perfect!                    ");
                     current->active = 0;
                     judged = 1;
@@ -209,20 +280,23 @@ void handle_input(int ch) {
             }
             current = current->next;
         }
-        if (!judged) {
+        if (!judged)
+        {
             mvprintw(HEIGHT, 0, "Miss...                      ");
         }
         refresh();
     }
 }
 
-void close_program() {
+void close_program()
+{
     audio_close();
     endwin();
     exit(0);
 }
 
-void init_ncurses() {
+void init_ncurses()
+{
     initscr();
     noecho();
     curs_set(FALSE);
@@ -234,7 +308,8 @@ void init_ncurses() {
     init_pair(4, COLOR_YELLOW, COLOR_BLACK);
 }
 
-void pause_game() {
+void pause_game()
+{
     char answer;
     int count = 0;
 
@@ -244,18 +319,23 @@ void pause_game() {
     endwin();
     printf("\n=== GAME PAUSED ===\n");
 
-    
     show_top_ranks(ranks, 3);
 
-    while (1) {
+    while (1)
+    {
         printf("Continue game? (y/n): ");
         scanf(" %c", &answer);
-        if (answer == 'y' || answer == 'Y') {
+        if (answer == 'y' || answer == 'Y')
+        {
             break;
-        } else if (answer == 'n' || answer == 'N') {
+        }
+        else if (answer == 'n' || answer == 'N')
+        {
             printf("Exiting game without saving data...\n");
             exit(0);
-        } else {
+        }
+        else
+        {
             printf("Invalid input. Please enter 'y' or 'n'.\n");
         }
     }
@@ -265,7 +345,8 @@ void pause_game() {
     is_game_paused = false;
 }
 
-void handle_game_over(char *username, int score) {
+void handle_game_over(char *username, int score)
+{
     insert_rank(username, song_name, score);
 
     endwin();
@@ -275,8 +356,8 @@ void handle_game_over(char *username, int score) {
     // YOUR RANK IS
 }
 
-
-int main() {
+int main()
+{
     signal(SIGINT, pause_game);
     signal(SIGTERM, close_program);
 
@@ -287,17 +368,23 @@ int main() {
     noecho();
     clear();
 
+    mvprintw(0, 0, "Loading beatmap and audio...");
+    refresh();
     read_beatmap("beatmaps/testbeatmap.txt");
-    read_leaderboard(ranks, song_name ,10);
+    mvprintw(1, 0, "Beatmap loaded: %s", song_name);
+    mvprintw(2, 0, "Connecting to server...");
+    refresh();
+    // read_leaderboard(ranks, song_name ,10);
 
-
-    if (!audio_init()) {
+    if (!audio_init())
+    {
         fprintf(stderr, "Audio initialization failed\n");
         return 1;
     }
 
     audio_play_bgm("musics/testbgm.wav"); // TODO: song_path로 바꾸기 (read_beatmap 만든 뒤)
-    if (!audio_load_se("sounds/hat.wav")) {
+    if (!audio_load_se("sounds/hat.wav"))
+    {
         fprintf(stderr, "SE loading failed\n");
         audio_close();
         return 1;
@@ -306,11 +393,14 @@ int main() {
     init_ncurses();
     srand(time(NULL));
 
-    while (1) {
+    while (1)
+    {
         clear();
 
-        for (int i = 1; i < NUM_LANES; i++) {
-            for (int y = 0; y < HEIGHT; y++) {
+        for (int i = 1; i < NUM_LANES; i++)
+        {
+            for (int y = 0; y < HEIGHT; y++)
+            {
                 mvaddch(y, i * LANE_WIDTH, '|');
             }
         }
@@ -323,35 +413,33 @@ int main() {
         update_notes();
 
         int ch = getch();
-        if (ch == 'z') break;
-        if (ch != ERR) {
+        if (ch == 'z')
+            break;
+        if (ch != ERR)
+        {
             audio_play_se();
             handle_input(ch);
         }
 
         // Spawn notes based on the beatmap
-        BeatMapNote* current = beatmap;
-        while (current != NULL) {
-            if (time_passed >= current->hit_ms - HEIGHT * MS_PER_FRAME) {
-                spawn_note(current, current->lane);
-                BeatMapNote* temp = current;
-                current = current->next;
-                free(temp);
-            } else {
-                current = current->next;
-            }
+        while (beatmap && time_passed >= beatmap->hit_ms - HEIGHT * MS_PER_FRAME)
+        {
+            spawn_note(beatmap, beatmap->lane);
+            BeatMapNote *temp = beatmap;
+            beatmap = beatmap->next;
+            free(temp);
         }
-        beatmap = current;
 
         // Check for game over condition
-        
+
         // BeatMapNote left is 0 and notes left is 0
-        if (beatmap == NULL && notes == NULL) {
+        if (beatmap == NULL && notes == NULL)
+        {
             break;
         }
 
         time_passed += 160; // 60 FPS
-        usleep(160000); // 60 FPS 고정
+        usleep(160000);     // 60 FPS 고정
     }
 
     endwin();
