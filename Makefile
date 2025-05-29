@@ -3,12 +3,15 @@
 CC = gcc
 LDFLAGS = -lncurses -lSDL2 -lSDL2_mixer
 
-SRC = ingame.c audio.c rank.c
+SRC = ingame.c audio.c rank.c network.c
 TARGET = game
 
-.PHONY: all clean deps run
+SERVER_SRC = ./server/server.c
+SERVER_TARGET = ./server/server
 
-all: deps $(TARGET)
+.PHONY: all clean deps run server
+
+all: deps $(TARGET) server
 
 $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS)
@@ -21,5 +24,9 @@ deps:
 run: $(TARGET)
 	./$(TARGET)
 
+server: $(SERVER_SRC)
+	$(CC) -o $(SERVER_TARGET) $(SERVER_SRC)
+
 clean:
 	rm -f $(TARGET)
+

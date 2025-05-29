@@ -1,4 +1,4 @@
-@노래제목 132000 testbgm.wav
+@testbgm 132000 testbgm.wav
 #120
 2000 1
 2300 1

@@ -374,7 +374,7 @@ int main()
     mvprintw(1, 0, "Beatmap loaded: %s", song_name);
     mvprintw(2, 0, "Connecting to server...");
     refresh();
-    // read_leaderboard(ranks, song_name ,10);
+    read_leaderboard(ranks, song_name ,10);
 
     if (!audio_init())
     {
