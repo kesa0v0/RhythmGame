@@ -319,8 +319,14 @@ void pause_game()
     endwin();
     printf("\n=== GAME PAUSED ===\n");
 
-    read_leaderboard(ranks, song_name, 3);
-    show_top_ranks(ranks, 3);
+    if (!read_leaderboard(ranks, song_name, 3))
+    {
+        fprintf(stderr, "Failed to connect the server...\n");
+    }
+    else
+    {
+        show_top_ranks(ranks, 3);
+    }
 
     while (1)
     {
@@ -348,17 +354,32 @@ void pause_game()
 
 void handle_game_over(char *username, int score)
 {
-    insert_rank(username, song_name, score);
+    if (!insert_rank(username, song_name, score))
+    {
+        fprintf(stderr, "Failed to connect the server...\n");
+        return;
+    }
 
     endwin();
     printf("\n===== GAME OVER =====\n");
-    
-    read_leaderboard(ranks, song_name ,10);
-    show_top_ranks(ranks, 10);
 
-    // YOUR RANK IS
+    if (!read_leaderboard(ranks, song_name ,10))
+    {
+        fprintf(stderr, "Failed to connect the server...\n");
+        return;
+    } else {
+        show_top_ranks(ranks, 10);
+        printf("Your score: %d\n", score);
 
-    
+        for (int i = 0; i < 10; i++)
+        {
+            if (strcmp(ranks[i].nickname, username) == 0)
+            {
+                printf("You are ranked %d with score %d\n", i + 1, ranks[i].score);
+                break;
+            }
+        }
+    }
 }
 
 int main()

@@ -7,7 +7,7 @@
 #define MAX_RANKS 10
 
 int read_leaderboard(LeaderboardEntry *entries, char *title, int max_entries);
-void insert_rank(char *nickname, char *title, int score);
+int insert_rank(char *nickname, char *title, int score);
 void show_top_ranks(LeaderboardEntry *entries, int count);
 
 #endif // RANK_H

@@ -12,7 +12,10 @@
 
 
 int read_leaderboard(LeaderboardEntry *entries, char *title, int max_entries) {
-    connect_to_server(SERVER_IP, PORT);
+    
+    if (!connect_to_server(SERVER_IP, PORT))
+        return 0; // Failed to connect to server
+
     // get top 10 entries and save them in entries
     if (!request_top10(title, entries)) {
         disconnect();
@@ -22,10 +25,13 @@ int read_leaderboard(LeaderboardEntry *entries, char *title, int max_entries) {
     return 1;
 }
 
-void insert_rank(char *nickname, char *title, int score) {
-    connect_to_server(SERVER_IP, PORT);
-    send_score(nickname, title, score);
+int insert_rank(char *nickname, char *title, int score) {
+    if (!connect_to_server(SERVER_IP, PORT)) 
+        return 0; // Failed to connect to server
+    
+    int result = send_score(nickname, title, score);
     disconnect();
+    return result;
 }
 
 void show_top_ranks(LeaderboardEntry *entries, int count) {
