@@ -71,6 +71,7 @@ void read_beatmap(const char *filename)
 
     char buf[1024];
     char line[256];
+    char temp_song_path[256];
     int buf_len = 0, line_len = 0;
     ssize_t bytes_read;
     beatmap = NULL;
@@ -90,7 +91,7 @@ void read_beatmap(const char *filename)
                 int hit_ms, lane;
                 if (line[0] == '@')
                 {
-                    sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
+                    sscanf(line, "@%s %d %s", song_name, &song_length, temp_song_path);
                 }
                 else if (line[0] == '#')
                 {
@@ -136,7 +137,7 @@ void read_beatmap(const char *filename)
         int hit_ms, lane;
         if (line[0] == '@')
         {
-            sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
+            sscanf(line, "@%s %d %s", song_name, &song_length, temp_song_path);
         }
         else if (line[0] == '#')
         {
