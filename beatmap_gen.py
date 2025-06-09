@@ -8,7 +8,7 @@ def get_audio_length_ms(audio_path):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python gen_beatmap.py <audiofile> <outputfile>")
+        print("Usage: python3 gen_beatmap.py <audiofile> <outputfile>")
         sys.exit(1)
 
     audio_path = sys.argv[1]
