@@ -19,7 +19,7 @@ bool audio_init()
         fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
         return false;
     }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 512) < 0)
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 128) < 0)
     {
         fprintf(stderr, "Mix_OpenAudio Error: %s\n", Mix_GetError());
         return false;

@@ -1,5 +1,6 @@
 #include "audio.h"
 #include "rank.h"
+#include "select_musics.h"
 
 #include <ncurses.h>
 #include <unistd.h>
@@ -55,7 +56,8 @@ typedef struct BeatMapNote
 } BeatMapNote;
 BeatMapNote *beatmap = NULL;
 char song_name[256];
-char song_path[512];
+const char *song_path;
+char beatmap_path[512];
 int song_length = 0;
 int bpm = 0;
 
@@ -70,6 +72,7 @@ void read_beatmap(const char *filename)
 
     char buf[1024];
     char line[256];
+    char temp_song_path[256];
     int buf_len = 0, line_len = 0;
     ssize_t bytes_read;
     beatmap = NULL;
@@ -89,7 +92,7 @@ void read_beatmap(const char *filename)
                 int hit_ms, lane;
                 if (line[0] == '@')
                 {
-                    sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
+                    sscanf(line, "@%s %d %s", song_name, &song_length, temp_song_path);
                 }
                 else if (line[0] == '#')
                 {
@@ -135,7 +138,7 @@ void read_beatmap(const char *filename)
         int hit_ms, lane;
         if (line[0] == '@')
         {
-            sscanf(line, "@%s %d %s", song_name, &song_length, song_path);
+            sscanf(line, "@%s %d %s", song_name, &song_length, temp_song_path);
         }
         else if (line[0] == '#')
         {
@@ -167,7 +170,7 @@ void spawn_note(BeatMapNote *beatmap, int lane)
     }
     new_note->lane = lane;
     new_note->hit_ms = beatmap->hit_ms;
-    new_note->y = TIMING_LINE - (new_note->hit_ms - time_passed / bpm);
+    new_note->y = TIMING_LINE - (new_note->hit_ms - time_passed / 160);
     new_note->active = 1;
     new_note->next = NULL;
 
@@ -191,7 +194,7 @@ void update_notes()
     {
         if (current->active)
         {
-            current->y = TIMING_LINE - (current->hit_ms - time_passed) / bpm;
+            current->y = TIMING_LINE - (current->hit_ms - time_passed) / 160;
             if (current->y >= HEIGHT)
             {
                 current->active = 0;
@@ -395,9 +398,14 @@ int main()
     noecho();
     clear();
 
+    // 음악 선택 및 비트맵 지정.
+    song_path = select_music();
+    generate_beatmap_path(song_path, beatmap_path, sizeof(beatmap_path));       // 만들어진 song_path기반으로 beatmap경로 생성.
+
+
     mvprintw(0, 0, "Loading beatmap and audio...");
     refresh();
-    read_beatmap("beatmaps/testbeatmap.txt");
+    read_beatmap(beatmap_path);
 
     if (!audio_init())
     {
@@ -405,7 +413,7 @@ int main()
         return 1;
     }
 
-    audio_play_bgm("musics/testbgm.wav"); // TODO: song_path로 바꾸기 (read_beatmap 만든 뒤)
+    audio_play_bgm(song_path);
     if (!audio_load_se("sounds/hat.wav"))
     {
         fprintf(stderr, "SE loading failed\n");
