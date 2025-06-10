@@ -443,20 +443,47 @@ int main()
 
         update_notes();
 
-        int ch;
-        while ((ch = getch()) == ERR)
-        {
-            if (ch == 'z')
-            {
-                running = false;
+               int ch;
+        int pressed[NUM_LANES] = {0, 0, 0, 0};
+        while ((ch = getch()) != ERR) {
+            if (ch == 'z') {
+                running = 0;
                 break;
             }
-            audio_play_se("sounds/hat.wav");
-            handle_input(ch);
+            // 각 lane별로 입력 기록
+            if (ch == 'q') pressed[0] = 1;
+            if (ch == 'w') pressed[1] = 1;
+            if (ch == 'e') pressed[2] = 1;
+            if (ch == 'r') pressed[3] = 1;
         }
-        if (!running)
-        {
-            break;
+        for (int lane = 0; lane < NUM_LANES; lane++) {
+            if (pressed[lane]) {
+                audio_play_se("sounds/hat.wav");
+                // handle_input을 lane별로 직접 호출
+                int judged = 0;
+                Note *current = notes;
+                while (current != NULL)
+                {
+                    if (current->active && current->lane == lane)
+                    {
+                        int diff = current->y - TIMING_LINE;
+                        if (diff >= -1 && diff <= 1)
+                        {
+                            mvprintw(HEIGHT, 0, "Perfect!                    ");
+                            current->active = 0;
+                            judged = 1;
+                            score += 1;
+                            break;
+                        }
+                    }
+                    current = current->next;
+                }
+                if (!judged)
+                {
+                    mvprintw(HEIGHT, 0, "Miss...                      ");
+                }
+                refresh();
+            }
         }
 
         // Spawn notes based on the beatmap
