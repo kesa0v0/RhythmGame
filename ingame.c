@@ -26,6 +26,7 @@ char username[20];
 LeaderboardEntry ranks[MAX_RANKS];
 
 bool is_game_paused = false;
+bool running = true;
 int time_passed = 0;
 
 #pragma region Note
@@ -415,7 +416,7 @@ int main()
     init_ncurses();
     srand(time(NULL));
 
-    while (1)
+    while (running)
     {
         clear();
 
@@ -434,13 +435,20 @@ int main()
 
         update_notes();
 
-        int ch = getch();
-        if (ch == 'z')
-            break;
-        if (ch != ERR)
+        int ch;
+        while ((ch = getch()) == ERR)
         {
-            audio_play_se();
+            if (ch == 'z')
+            {
+                running = false;
+                break;
+            }
+            audio_play_se("sounds/hat.wav");
             handle_input(ch);
+        }
+        if (!running)
+        {
+            break;
         }
 
         // Spawn notes based on the beatmap
