@@ -1,4 +1,4 @@
-@testbgm 26181 ./some_music_A.wav
+@some_music_A 26181 ./some_music_A.wav
 #120
 1091 3
 1323 2

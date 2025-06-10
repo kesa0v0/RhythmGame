@@ -1,4 +1,4 @@
-@testbgm 132000 ./some_sound_B.wav
+@some_sound_B 132000 ./some_sound_B.wav
 #120
 1470 0
 1950 0
