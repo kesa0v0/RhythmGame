@@ -13,6 +13,12 @@ char music_files[MAX_MUSIC_FILES][256];
 int music_file_count = 0;
 char selected_song_path[512];
 
+// 알파벳 순으로 출력하도록 list_music_files() 수정 및 정렬함수 추가.
+int cmp_music_names(const void *a, const void *b) {
+    return strcmp((const char *)a, (const char *)b);
+}
+
+
 void list_music_files() {
     struct dirent *entry;
     DIR *dir = opendir(MUSIC_DIR);
@@ -36,6 +42,9 @@ void list_music_files() {
     }
 
     closedir(dir);
+
+    //알파벳순 정렬 추가
+    qsort(music_files, music_file_count, sizeof(music_files[0]), cmp_music_names);
 }
 
 const char* select_music() {
