@@ -79,6 +79,9 @@ void *client_handler(void *arg)
     free(arg);
     char buffer[1024];
 
+    //race condition 락으로 해결
+    pthread_mutex_t file_lock = PTHREAD_MUTEX_INITIALIZER;
+
     printf("[client_handler] 클라이언트 연결됨 (소켓: %d)\n", client_sock);
 
     while (1)
@@ -93,6 +96,8 @@ void *client_handler(void *arg)
 
         printf("[client_handler] 받은 메시지: %s\n", buffer);
 
+
+        // score 요청 처리
         if (strncmp(buffer, "SCORE", 5) == 0)
         {
             char nickname[64], title[64];
@@ -101,6 +106,8 @@ void *client_handler(void *arg)
             char filename[128];
             snprintf(filename, sizeof(filename), "%s.txt", title);
 
+            // race conditon 방지를 위한 락
+            pthread_mutex_lock(&file_lock);
             FILE *fp = fopen(filename, "a");
             if (fp)
             {
@@ -113,14 +120,21 @@ void *client_handler(void *arg)
                 printf("[client_handler/SCORE] 점수 파일 열기 실패: %s\n", filename);
             }
             sort_scores(filename);
+            pthread_mutex_unlock(&file_lock);
+
             send(client_sock, "OK\n", 14, 0);
         }
+        // top10정보 요청
         else if (strncmp(buffer, "TOP10", 5) == 0)
         {
             char title[64];
             sscanf(buffer + 6, "%s", title);
             char filename[128];
             snprintf(filename, sizeof(filename), "%s.txt", title);
+
+
+            // race conditon 방지를 위한 락
+            pthread_mutex_lock(&file_lock);
             FILE *fp = fopen(filename, "r");
             if (fp)
             {
@@ -141,6 +155,8 @@ void *client_handler(void *arg)
                 send(client_sock, "No scores found.\n", 17, 0);
                 printf("[client_handler/TOP10] TOP10 요청 파일 없음: %s\n", filename);
             }
+
+            pthread_mutex_unlock(&file_lock);
         }
     }
     close(client_sock);
