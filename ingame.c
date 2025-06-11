@@ -24,6 +24,10 @@
 #define BASE_BPM 120
 #define BASE_MS_PER_FRAME 160
 
+#define PERFECT_SCORE 2
+#define GREAT_SCORE 1
+#define MISS_SCORE (-1)
+
 int ms_per_frame = BASE_MS_PER_FRAME; // 60 FPS
 
 int score = 0;
@@ -257,46 +261,6 @@ void draw_notes()
 
 #pragma endregion
 
-void handle_input(int ch)
-{
-    int lane = -1;
-    if (ch == 'q')
-        lane = 0;
-    else if (ch == 'w')
-        lane = 1;
-    else if (ch == 'e')
-        lane = 2;
-    else if (ch == 'r')
-        lane = 3;
-
-    if (lane != -1)
-    {
-        int judged = 0;
-        Note *current = notes;
-        while (current != NULL)
-        {
-            if (current->active && current->lane == lane)
-            {
-                int diff = current->y - TIMING_LINE;
-                if (diff >= -1 && diff <= 1)
-                {
-                    mvprintw(HEIGHT, 0, "Perfect!                    ");
-                    current->active = 0;
-                    judged = 1;
-                    score += 1;
-                    break;
-                }
-            }
-            current = current->next;
-        }
-        if (!judged)
-        {
-            mvprintw(HEIGHT, 0, "Miss...                      ");
-        }
-        refresh();
-    }
-}
-
 void close_program()
 {
     audio_close();
@@ -478,12 +442,20 @@ int main()
                     if (current->active && current->lane == lane)
                     {
                         int diff = current->y - TIMING_LINE;
-                        if (diff >= -1 && diff <= 1)
+                        if (diff == 0)
                         {
                             mvprintw(HEIGHT, 0, "Perfect!                    ");
                             current->active = 0;
                             judged = 1;
-                            score += 1;
+                            score += PERFECT_SCORE;
+                            break;
+                        }
+                        if (diff == -1 || diff == 1)
+                        {
+                            mvprintw(HEIGHT, 0, "Great!                      ");
+                            current->active = 0;
+                            judged = 1;
+                            score += GREAT_SCORE;
                             break;
                         }
                     }
@@ -492,6 +464,7 @@ int main()
                 if (!judged)
                 {
                     mvprintw(HEIGHT, 0, "Miss...                      ");
+                    score += MISS_SCORE;
                 }
                 refresh();
             }
