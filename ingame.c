@@ -466,7 +466,7 @@ int main()
                 if (!judged)
                 {
                     mvprintw(HEIGHT, 0, "Miss...                      ");
-                    score += MISS_SCORE;
+                    if(score > 0) score += MISS_SCORE;
                 }
                 refresh();
             }
