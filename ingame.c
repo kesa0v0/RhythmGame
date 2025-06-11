@@ -206,6 +206,8 @@ void update_notes()
             current->y = TIMING_LINE - (current->hit_ms - time_passed) / ms_per_frame;
             if (current->y >= HEIGHT)
             {
+                score += MISS_SCORE;
+                mvprintw(HEIGHT, 0, "Miss...                      ");
                 current->active = 0;
                 note_count--;
             }
