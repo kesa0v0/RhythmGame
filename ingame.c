@@ -21,6 +21,11 @@
 #define NUM_LANES 4
 #define LANE_WIDTH (WIDTH / NUM_LANES)
 
+#define BASE_BPM 120
+#define BASE_MS_PER_FRAME 160
+
+int ms_per_frame = BASE_MS_PER_FRAME; // 60 FPS
+
 int score = 0;
 
 char username[20];
@@ -170,7 +175,7 @@ void spawn_note(BeatMapNote *beatmap, int lane)
     }
     new_note->lane = lane;
     new_note->hit_ms = beatmap->hit_ms;
-    new_note->y = TIMING_LINE - (new_note->hit_ms - time_passed / 160);
+    new_note->y = TIMING_LINE - (new_note->hit_ms - time_passed / ms_per_frame);
     new_note->active = 1;
     new_note->next = NULL;
 
@@ -194,7 +199,7 @@ void update_notes()
     {
         if (current->active)
         {
-            current->y = TIMING_LINE - (current->hit_ms - time_passed) / 160;
+            current->y = TIMING_LINE - (current->hit_ms - time_passed) / ms_per_frame;
             if (current->y >= HEIGHT)
             {
                 current->active = 0;
@@ -407,6 +412,12 @@ int main()
     refresh();
     read_beatmap(beatmap_path);
 
+    if (bpm > 0) {
+        ms_per_frame = (int)(BASE_MS_PER_FRAME * (float)BASE_BPM / bpm);
+    } else {
+        ms_per_frame = BASE_MS_PER_FRAME;
+    }
+
     if (!audio_init())
     {
         fprintf(stderr, "Audio initialization failed\n");
@@ -443,7 +454,7 @@ int main()
 
         update_notes();
 
-               int ch;
+        int ch;
         int pressed[NUM_LANES] = {0, 0, 0, 0};
         while ((ch = getch()) != ERR) {
             if (ch == 'z') {
@@ -487,7 +498,7 @@ int main()
         }
 
         // Spawn notes based on the beatmap
-        while (beatmap && time_passed >= beatmap->hit_ms - HEIGHT * MS_PER_FRAME)
+        while (beatmap && time_passed >= beatmap->hit_ms - HEIGHT * ms_per_frame)
         {
             spawn_note(beatmap, beatmap->lane);
             BeatMapNote *temp = beatmap;
@@ -503,8 +514,8 @@ int main()
             break;
         }
 
-        time_passed += 160; // 60 FPS
-        usleep(160000);     // 60 FPS 고정
+        time_passed += ms_per_frame;
+        usleep(ms_per_frame * 1000);
     }
 
     endwin();
